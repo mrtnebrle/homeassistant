@@ -1,0 +1,710 @@
+homeassistant:
+  customize:
+    package.node_anchor:
+      title_style:
+        style: |
+          ha-card, ha-card ha-markdown {
+            background: none !important; 
+            margin: 0 !important; 
+            padding-top: 5px !important; 
+            padding-bottom: 0 !important;
+          }
+      button_no_background_style:
+        style: |
+          ha-card { 
+            border: none !important; background: none !important; 
+          }
+kiosk_mode:
+  non_admin_settings:
+    hide_header: true
+    hide_sidebar: true
+    hide_overflow: true
+sidebar:
+  digitalClock: true
+  twelveHourVersion: true
+  period: true
+  width:
+    desktop: 20
+  style: |
+    .sidebarMenu {
+      border: none !important;
+    }
+    li {
+      margin-top: 10px;
+    }
+  template: |
+    <li>
+      {% if now().hour  < 5 %} Zzzzzzz {{'\U0001F634'}}
+      {% elif now().hour < 12 %} Good Morning, Beautiful {{'\u2615\uFE0F'}}
+      {% elif now().hour < 18 %} Good Afternoon, Handsome {{'\U0001F44B\U0001F3FB'}}
+      {% else %} Good Evening, Princess, Queen, and King {{'\U0001F44B\U0001F3FB'}}{% endif %}
+    </li>
+    <li>
+      {% set ns = namespace(irrigation_on=false) %}
+      {% set watering_entity = namespace(zone="") %}
+      {% for state in states.switch %}
+        {% if (state.entity_id | regex_match('switch\\.zone_[1-9]$')) and state.state == 'on' %}
+          {% set ns.irrigation_on = true %}
+          {% set watering_entity.zone = state.name %}
+        {% endif %}
+      {% endfor %}
+      {% if ns.irrigation_on %} 💦 Irrigation is watering {{watering_entity.zone}} currently.
+      {% elif not ns.irrigation_on %} Irrigation is not watering.{% endif %}
+    </li>
+    <li>
+      {% set lights = namespace(lights_on_status_list = []) %}
+      {% for state in states.light %}
+        {% if (state.state == 'on') and not (state.name.startswith('Group')) %}
+          {% set lights.lights_on_status_list = lights.lights_on_status_list + [state.name] %}
+        {% endif %}
+      {% endfor %}
+      {% set lights_num = namespace(lights_on = lights.lights_on_status_list | length) %}
+      {% if lights_num.lights_on == 0 %}No lights are on.{% elif lights_num.lights_on == 1 %}💡 One light is on:{% else %}💡 {{ lights_num.lights_on }} lights are on:{% endif %} {% for light in lights.lights_on_status_list | sort(attribute='0')%}{{ light }}{{", " if not loop.last else ""}}{% endfor %}  
+    </li>
+  bottomCard:
+    type: vertical-stack
+    cardStyle: |
+      :host {
+        width: 100%;
+      }
+    cardOptions:
+      cards:
+        - type: custom:sugartv-card
+          value_entity: sensor.dexcom_glucose_value
+          trend_entity: sensor.dexcom_glucose_trend
+        - type: custom:clock-weather-card
+          entity: weather.east_wing
+          sun_entity: sun.sun
+          temperature_sensor: sensor.pentair_20_30_c1_air_temperature
+          weather_icon_type: line
+          animated_icon: true
+          locale: en-US
+          hide_today_section: false
+          hide_forecast_section: false
+          hide_clock: true
+          hide_date: true
+          hourly_forecast: false
+          use_browser_time: false
+          time_zone: US/Central
+          style: |
+            ha-card { 
+              border: none !important; background: none !important; 
+            }
+        - type: custom:layout-card
+          layout_type: custom:grid-layout
+          layout:
+            grid-template-columns: 50% 50%
+          cards:
+            - type: custom:mushroom-entity-card
+              entity: automation.wakeup_weekdays_olivia
+              name: Wake Olivia
+              icon: mdi:bell-sleep-outline
+              tap_action:
+                action: call-service
+                service: automation.toggle
+                target:
+                  entity_id: automation.wakeup_weekdays_olivia
+              style: |
+                ha-card { 
+                  border: none !important; background: none !important; 
+                }
+            - type: custom:mushroom-entity-card
+              entity: automation.wakeup_weekdays_parents
+              name: Wake Parents
+              icon: mdi:bell-sleep-outline
+              tap_action:
+                action: call-service
+                service: automation.toggle
+                target:
+                  entity_id: automation.wakeup_weekdays_parents
+              style: |
+                ha-card { 
+                  border: none !important; background: none !important; 
+                }
+            - type: custom:mushroom-entity-card
+              entity: automation.sprinkler_scheduler
+              name: Irrigation
+              icon: mdi:sprinkler
+              tap_action:
+                action: call-service
+                service: automation.toggle
+                target:
+                  entity_id: automation.sprinkler_scheduler
+              style: |
+                ha-card { 
+                  border: none !important; background: none !important; 
+                }
+        - type: horizontal-stack
+          cards:
+            - type: custom:mushroom-person-card
+              entity: person.ofluegel
+              primary_info: none
+              secondary_info: none
+              icon_type: entity-picture
+              style: |
+                ha-card { 
+                  border: none !important; background: none !important; 
+                }
+            - type: custom:mushroom-person-card
+              entity: person.kfluegel
+              primary_info: none
+              secondary_info: none
+              icon_type: entity-picture
+              style: |
+                ha-card { 
+                  border: none !important; background: none !important; 
+                }
+            - type: custom:mushroom-person-card
+              entity: person.mareberle
+              primary_info: none
+              secondary_info: none
+              icon_type: entity-picture
+              style: |
+                ha-card { 
+                  border: none !important; background: none !important; 
+                }
+            - type: custom:mushroom-person-card
+              entity: person.dfluegel
+              primary_info: none
+              secondary_info: none
+              icon_type: entity-picture
+              style: |
+                ha-card { 
+                  border: none !important; background: none !important; 
+                }
+views:
+  - title: Dashboard
+    type: custom:layout-card
+    layout_type: custom:grid-layout
+    layout:
+      grid-template-columns: 15% 30% 25% auto
+    badges: []
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:mushroom-lock-card
+            name: Front Door
+            entity: lock.front_door
+          - type: custom:mushroom-title-card
+          - type: custom:mushroom-cover-card
+            name: Kathrins Garage
+            fill_container: true
+            entity: cover.ratgdov25i_f612b0_door
+          - type: custom:mushroom-cover-card
+            name: TRX Garage
+            entity: cover.ratgdov25i_f8080d_door
+          - type: custom:mushroom-cover-card
+            name: Work Garage
+            entity: cover.ratgdov25i_f9ed12_door
+          - type: custom:mushroom-cover-card
+            name: Parents Garage
+            entity: cover.ratgdov25i_f614f0_door
+          - type: custom:mushroom-title-card
+          - type: custom:mushroom-template-card
+            entity: automation.sprinkler_scheduler
+            tap_action:
+              action: call-service
+              service: automation.trigger
+              target:
+                entity_id: automation.sprinkler_scheduler
+            primary: Irrigation Cycle
+            icon: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  mdi:sprinkler-variant
+              {% else %}
+                  mdi:water-outline
+              {% endif %}
+            icon_color: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  blue
+              {% else %}
+                  grey
+              {% endif %}
+            secondary: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  Watering
+              {% else %}
+                  Idle
+              {% endif %}
+          - type: custom:mushroom-template-card
+            entity: automation.irrigation_drip_frontyard
+            tap_action:
+              action: call-service
+              service: automation.trigger
+              target:
+                entity_id: automation.irrigation_drip_frontyard
+            primary: Drip Frontyard
+            icon: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  mdi:water-opacity
+              {% else %}
+                  mdi:water-outline
+              {% endif %}
+            icon_color: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  blue
+              {% else %}
+                  grey
+              {% endif %}
+            secondary: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  Watering
+              {% else %}
+                  Idle
+              {% endif %}
+          - type: custom:mushroom-template-card
+            entity: automation.irrigation_drip_pool_flowerbed
+            tap_action:
+              action: call-service
+              service: automation.trigger
+              target:
+                entity_id: automation.irrigation_drip_pool_flowerbed
+            primary: Drip Pool Flowerbed
+            icon: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  mdi:water-opacity
+              {% else %}
+                  mdi:water-outline
+              {% endif %}
+            icon_color: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  blue
+              {% else %}
+                  grey
+              {% endif %}
+            secondary: >-
+              {% set automation_state = states.automation |
+              selectattr('attributes.current', 'defined') |
+              selectattr('attributes.current', '>', 0) |
+              map(attribute='entity_id') | list %}
+
+              {% if entity in automation_state %}
+                  Watering
+              {% else %}
+                  Idle
+              {% endif %}
+      - type: vertical-stack
+        cards:
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 60% 40%
+            cards:
+              - type: custom:mushroom-climate-card
+                entity: climate.east_wing
+                name: Main Wing
+                hvac_modes:
+                  - heat_cool
+                  - heat
+                  - cool
+                  - 'off'
+                show_temperature_control: true
+              - type: vertical-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    multiline_secondary: true
+                    secondary: >
+                      Unit {{ states("sensor.east_wing_temperature") | float }}
+                      °F
+
+                      Bed {{ states("sensor.master_bedroom_temperature") | float
+                      }} °F
+
+                      Living {{
+                      states("sensor.dining_room_temperature_sensor_temperature")
+                      | float }} °F
+
+                      Bath {{ states("sensor.master_bathroom_temperature") |
+                      float }} °F
+                    tap_action:
+                      action: none
+                    style: >-
+                      ha-card { border: none !important; background: none
+                      !important; }
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 60% 40%
+            cards:
+              - type: custom:mushroom-climate-card
+                entity: climate.west_wing
+                name: Granny Wing
+                show_temperature_control: true
+                hvac_modes:
+                  - heat_cool
+                  - heat
+                  - cool
+                  - 'off'
+              - type: vertical-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    multiline_secondary: true
+                    secondary: >
+                      Unit {{ states("sensor.west_wing_temperature") | float }}
+                      °F
+
+                      Bed {{ states("sensor.granny_bed_temperature") | float }}
+                      °F
+
+                      Living {{ states("sensor.granny_living_room_temperature")
+                      | float }} °F
+
+                      Bath {{ states("sensor.granny_bath_temperature") | float
+                      }} °F
+                    tap_action:
+                      action: none
+                    style: >-
+                      ha-card { border: none !important; background: none
+                      !important; }
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 60% 40%
+            cards:
+              - type: custom:mushroom-climate-card
+                entity: climate.garage
+                name: Work Garage
+                show_temperature_control: true
+                hvac_modes:
+                  - auto
+                  - heat
+                  - cool
+                  - 'off'
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 60% 40%
+              grid-template-areas: |
+                "pool-control pool-info"
+                "pool-aux pool-aux"
+            cards:
+              - type: custom:mushroom-climate-card
+                name: Pool
+                entity: climate.pentair_20_30_c1_pool_heat
+                tap_action: more-info
+                icon: mdi:pool-thermometer
+                show_temperature_control: true
+                hvac_modes:
+                  - heat
+                view_layout:
+                  grid-area: pool-control
+              - type: vertical-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    multiline_secondary: true
+                    secondary: >
+                      Freeze Mode is {{
+                      states("binary_sensor.pentair_20_30_c1_freeze_mode") }}
+
+                      Cleaner Pump is {{
+                      states("binary_sensor.pentair_20_30_c1_cleaner_pump") }}
+                    tap_action:
+                      action: none
+                    style: |
+                      ha-card { 
+                        border: none !important; background: none !important; 
+                      }
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-light-card
+                    name: Lights
+                    entity: light.group_pool_lights
+                    icon: mdi:waves
+                  - type: custom:mushroom-entity-card
+                    name: Fountain
+                    entity: switch.pentair_20_30_c1_fountain
+                view_layout:
+                  grid-area: pool-aux
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 60% 40%
+              grid-template-areas: |
+                "spa-control spa-control spa-info"
+                "spa-aux spa-aux spa-aux"
+            cards:
+              - type: custom:mushroom-climate-card
+                name: Spa
+                entity: climate.pentair_20_30_c1_spa_heat
+                icon: mdi:spa
+                show_temperature_control: true
+                hvac_modes:
+                  - heat
+                view_layout:
+                  grid-area: spa-control
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-entity-card
+                    entity: switch.pentair_20_30_c1_spa
+                    name: Spa
+                  - type: custom:mushroom-entity-card
+                    entity: switch.pentair_20_30_c1_jets
+                    name: Jets
+                  - type: custom:mushroom-entity-card
+                    entity: switch.pentair_20_30_c1_air_blower
+                    icon: mdi:alpha-b-box
+                    name: Blower
+                view_layout:
+                  grid-area: spa-aux
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              #### Kitchen
+            style: |
+              ha-card, ha-card ha-markdown {
+                background: none !important; 
+                margin: 0 !important; 
+                padding-top: 5px !important; 
+                padding-bottom: 0 !important;
+              }
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 50% 50%
+            cards:
+              - type: custom:mushroom-light-card
+                entity: light.group_all_kitchen_lights
+                use_light_color: false
+                collapsible_controls: false
+                tap_action:
+                  action: call-service
+                  service: light.turn_off
+                  target:
+                    area_id: kitchen_2
+                name: All Off
+                secondary_info: none
+                icon: mdi:lightbulb-off
+              - type: custom:mushroom-light-card
+                entity: light.kitchen_overhead_lights
+                name: Overhead
+                icon: mdi:light-recessed
+              - type: custom:mushroom-light-card
+                entity: light.group_kitchen_ucls
+                name: Under Cabinet
+                icon: mdi:led-strip-variant
+              - type: custom:mushroom-light-card
+                entity: light.kitchen_island_lights
+                name: Island
+                icon: mdi:ceiling-light-multiple
+              - type: custom:mushroom-light-card
+                entity: light.kitchen_longhorn
+                name: Longhorn
+                icon: mdi:cow
+          - type: markdown
+            content: |
+              #### Accents
+            style: |
+              ha-card, ha-card ha-markdown {
+                background: none !important; 
+                margin: 0 !important; 
+                padding-top: 5px !important; 
+                padding-bottom: 0 !important;
+              }
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 50% 50%
+            cards:
+              - type: custom:mushroom-light-card
+                entity: light.outdoor_accent_lights
+                icon: mdi:lightbulb-night-outline
+                name: Accent
+              - type: custom:mushroom-light-card
+                entity: light.group_all_perimeter_lights
+                icon: mdi:light-flood-down
+                name: Perimeter
+              - type: custom:mushroom-light-card
+                entity: light.courtyard_garage_lights
+                name: Courtyard
+                icon: mdi:wall-sconce-flat-variant
+              - type: custom:mushroom-light-card
+                name: Holiday
+                entity: light.holiday_lights
+                icon: mdi:string-lights
+          - type: markdown
+            content: |
+              #### Patio
+            style: |
+              ha-card, ha-card ha-markdown {
+                background: none !important; 
+                margin: 0 !important; 
+                padding-top: 5px !important; 
+                padding-bottom: 0 !important;
+              }
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 50% 50%
+            cards:
+              - type: custom:mushroom-light-card
+                entity: light.main_patio_lights
+                name: Patio
+                icon: mdi:light-recessed
+              - type: custom:mushroom-light-card
+                entity: light.east_wing_patio_overhead_lights
+                name: BBQ
+                icon: mdi:grill-outline
+              - type: custom:mushroom-light-card
+                name: Step Lights
+                entity: light.pentair_20_30_c1_deck_light
+                icon: mdi:stairs
+          - type: markdown
+            content: |
+              #### Dining
+            style: |
+              ha-card, ha-card ha-markdown {
+                background: none !important; 
+                margin: 0 !important; 
+                padding-top: 5px !important; 
+                padding-bottom: 0 !important;
+              }
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 50% 50%
+            cards:
+              - type: custom:mushroom-light-card
+                entity: light.dining_room_dinner_table_lights
+                name: Dinner Table
+                icon: mdi:table-chair
+              - type: custom:mushroom-light-card
+                entity: light.dining_room_art_spot_lights
+                name: Art Spots
+                icon: mdi:spotlight-beam
+              - type: custom:mushroom-light-card
+                entity: light.dining_room_art_spot_light
+                name: Art Spot
+                icon: mdi:spotlight-beam
+          - type: markdown
+            content: |
+              #### Living
+            style: |
+              ha-card, ha-card ha-markdown {
+                background: none !important; 
+                margin: 0 !important; 
+                padding-top: 5px !important; 
+                padding-bottom: 0 !important;
+              }
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 50% 50%
+            cards:
+              - type: custom:mushroom-light-card
+                entity: light.living_room_lights
+                name: Overhead
+                icon: mdi:light-recessed
+              - type: custom:mushroom-light-card
+                entity: light.living_room_art_spot_lights
+                name: Art Spots
+                icon: mdi:spotlight-beam
+              - type: custom:mushroom-light-card
+                entity: light.living_room_floor_lamp
+                name: Floor
+                icon: mdi:floor-lamp
+      - type: vertical-stack
+        cards:
+          - type: custom:sonos-card
+            sections:
+              - player
+              - volumes
+              - groups
+              - grouping
+              - media browser
+            heightPercentage: 92
+            showVolumeUpAndDownButtons: true
+          - type: markdown
+            content: |
+              #### Fireplace
+            style: |
+              ha-card, ha-card ha-markdown {
+                background: none !important; 
+                margin: 0 !important; 
+                padding-top: 5px !important; 
+                padding-bottom: 0 !important;
+              }
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-light-card
+                entity: light.nap_night_light
+                name: Night
+              - type: custom:mushroom-light-card
+                entity: switch.nap_aux
+                name: Colors
+                icon: mdi:led-off
+              - type: custom:mushroom-light-card
+                name: Flame
+                entity: light.nap_flame
+          - type: custom:layout-card
+            layout_type: custom:grid-layout
+            layout:
+              grid-template-columns: 50% 50%
+              grid-template-areas: |
+                "cam1 cam2"
+                "cam3 cam4"
+            cards:
+              - type: picture-entity
+                entity: camera.g4_pro_high_3
+                show_state: false
+                show_name: false
+              - type: picture-entity
+                entity: camera.g4_pro_high_4
+                show_state: false
+                show_name: false
+              - type: picture-entity
+                entity: camera.g4_pro_high_2
+                show_state: false
+                show_name: false
+              - type: picture-entity
+                entity: camera.g4_pro_high
+                show_state: false
+                show_name: false
+              - type: picture-entity
+                entity: camera.front_door_doorbell_high
+                show_state: false
+                show_name: false
+              - type: picture-entity
+                entity: camera.front_door_doorbell_package_camera
+                show_state: false
+                show_name: false
